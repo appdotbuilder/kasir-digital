@@ -1,21 +1,63 @@
+import { db } from '../db';
+import { usersTable } from '../db/schema';
 import { type UpdateUserInput, type User } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export async function updateUser(input: UpdateUserInput): Promise<Omit<User, 'password'>> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Find user by ID
-    // 2. Update provided fields (admin only)
-    // 3. Update updated_at timestamp
-    // 4. Return updated user data without password
-    
-    return Promise.resolve({
-        id: input.id,
-        email: 'placeholder@example.com',
-        full_name: input.full_name || 'Placeholder User',
-        phone_number: input.phone_number || null,
-        role: input.role || 'user',
-        is_active: input.is_active ?? true,
-        created_at: new Date(),
-        updated_at: new Date()
-    });
+  try {
+    // First check if user exists
+    const existingUser = await db.select()
+      .from(usersTable)
+      .where(eq(usersTable.id, input.id))
+      .execute();
+
+    if (existingUser.length === 0) {
+      throw new Error(`User with id ${input.id} not found`);
+    }
+
+    // Build update object with only provided fields
+    const updateData: any = {
+      updated_at: new Date()
+    };
+
+    if (input.full_name !== undefined) {
+      updateData.full_name = input.full_name;
+    }
+
+    if (input.phone_number !== undefined) {
+      updateData.phone_number = input.phone_number;
+    }
+
+    if (input.is_active !== undefined) {
+      updateData.is_active = input.is_active;
+    }
+
+    if (input.role !== undefined) {
+      updateData.role = input.role;
+    }
+
+    // Update the user
+    const result = await db.update(usersTable)
+      .set(updateData)
+      .where(eq(usersTable.id, input.id))
+      .returning()
+      .execute();
+
+    const updatedUser = result[0];
+
+    // Return user without password
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      full_name: updatedUser.full_name,
+      phone_number: updatedUser.phone_number,
+      role: updatedUser.role,
+      is_active: updatedUser.is_active,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at
+    };
+  } catch (error) {
+    console.error('User update failed:', error);
+    throw error;
+  }
 }

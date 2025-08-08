@@ -1,10 +1,20 @@
+import { db } from '../db';
+import { productCategoriesTable } from '../db/schema';
 import { type ProductCategory } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function getProductCategories(): Promise<ProductCategory[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Fetch all active product categories from database
-    // 2. Return list of categories for frontend display
-    
-    return Promise.resolve([]);
-}
+export const getProductCategories = async (): Promise<ProductCategory[]> => {
+  try {
+    // Fetch all active product categories from database
+    const results = await db.select()
+      .from(productCategoriesTable)
+      .where(eq(productCategoriesTable.is_active, true))
+      .execute();
+
+    // Return categories - no numeric conversion needed as all fields are strings/booleans/dates
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch product categories:', error);
+    throw error;
+  }
+};

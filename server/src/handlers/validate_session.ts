@@ -1,13 +1,43 @@
+import { db } from '../db';
+import { sessionsTable, usersTable } from '../db/schema';
 import { type User } from '../schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function validateSession(sessionId: string): Promise<Omit<User, 'password'> | null> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Find session by ID
-    // 2. Check if session is not expired
-    // 3. Get associated user
-    // 4. Check if user is still active
-    // 5. Return user data without password, or null if invalid
-    
-    return Promise.resolve(null);
+  try {
+    // Find session by ID with associated user data
+    const result = await db.select({
+      session: sessionsTable,
+      user: usersTable
+    })
+      .from(sessionsTable)
+      .innerJoin(usersTable, eq(sessionsTable.user_id, usersTable.id))
+      .where(eq(sessionsTable.id, sessionId))
+      .execute();
+
+    // No session found
+    if (result.length === 0) {
+      return null;
+    }
+
+    const { session, user } = result[0];
+
+    // Check if session is expired
+    const now = new Date();
+    if (session.expires_at <= now) {
+      return null;
+    }
+
+    // Check if user is still active
+    if (!user.is_active) {
+      return null;
+    }
+
+    // Return user data without password
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  } catch (error) {
+    console.error('Session validation failed:', error);
+    throw error;
+  }
 }

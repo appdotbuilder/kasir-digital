@@ -1,12 +1,26 @@
+import { db } from '../db';
+import { usersTable } from '../db/schema';
 import { type User } from '../schema';
 
 export async function getAllUsers(): Promise<Omit<User, 'password'>[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Fetch all users from database (admin only)
-    // 2. Exclude password field for security
-    // 3. Include wallet information using relations
-    // 4. Return user list for admin management
-    
-    return Promise.resolve([]);
+  try {
+    // Query all users, excluding the password field for security
+    const results = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      full_name: usersTable.full_name,
+      phone_number: usersTable.phone_number,
+      role: usersTable.role,
+      is_active: usersTable.is_active,
+      created_at: usersTable.created_at,
+      updated_at: usersTable.updated_at
+    })
+    .from(usersTable)
+    .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to get all users:', error);
+    throw error;
+  }
 }

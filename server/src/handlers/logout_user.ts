@@ -1,9 +1,18 @@
+import { db } from '../db';
+import { sessionsTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
+
 export async function logoutUser(sessionId: string): Promise<{ success: boolean }> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Find session by ID
-    // 2. Delete session from database
-    // 3. Return success status
-    
-    return Promise.resolve({ success: true });
+  try {
+    // Delete session from database
+    const result = await db.delete(sessionsTable)
+      .where(eq(sessionsTable.id, sessionId))
+      .execute();
+
+    // Return success status
+    return { success: true };
+  } catch (error) {
+    console.error('Logout failed:', error);
+    throw error;
+  }
 }
